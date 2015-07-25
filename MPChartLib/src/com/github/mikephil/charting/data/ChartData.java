@@ -165,7 +165,7 @@ public abstract class ChartData<T extends DataSet<? extends Entry>> {
      * Checks if the combination of x-values array and DataSet array is legal or
      * not.
      */
-    private void isLegal() {
+    protected void isLegal() {
 
         if (mDataSets == null)
             return;
