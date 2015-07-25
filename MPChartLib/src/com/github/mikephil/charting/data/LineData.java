@@ -3,6 +3,8 @@ package com.github.mikephil.charting.data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Data object that encapsulates all data associated with a LineChart.
@@ -43,5 +45,29 @@ public class LineData extends BarLineScatterCandleData<LineDataSet> {
         List<LineDataSet> sets = new ArrayList<LineDataSet>();
         sets.add(dataSet);
         return sets;
+    }
+
+
+    // overridden methods
+
+    @Override
+    protected void isLegal() {
+        if (mDataSets == null)
+            return;
+
+        for (int i = 0; i < mDataSets.size(); i++) {
+
+            List<Entry> yVals = mDataSets.get(i).getYVals();
+            Set<Integer> uniqueX = new TreeSet<Integer>();
+
+            for (Entry e : yVals) {
+                uniqueX.add(e.getXIndex());
+            }
+
+            if (uniqueX.size() > mXVals.size()) {
+                throw new IllegalArgumentException(
+                        "One or more of the DataSet Entry arrays are longer than the x-values array of this ChartData object.");
+            }
+        }
     }
 }
