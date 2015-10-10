@@ -4,6 +4,10 @@ package com.xxmassdeveloper.mpchartexample;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,7 +27,7 @@ import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.mikephil.charting.highlight.Highlight;
-import com.github.mikephil.charting.utils.PercentFormatter;
+import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.xxmassdeveloper.mpchartexample.notimportant.DemoBase;
 
 import java.util.ArrayList;
@@ -58,12 +62,14 @@ public class PieChartActivity extends DemoBase implements OnSeekBarChangeListene
         mChart = (PieChart) findViewById(R.id.chart1);
         mChart.setUsePercentValues(true);
         mChart.setDescription("");
-        
+        mChart.setExtraOffsets(5, 10, 5, 5);
+
         mChart.setDragDecelerationFrictionCoef(0.95f);
 
         tf = Typeface.createFromAsset(getAssets(), "OpenSans-Regular.ttf");
 
         mChart.setCenterTextTypeface(Typeface.createFromAsset(getAssets(), "OpenSans-Light.ttf"));
+        mChart.setCenterText(generateCenterSpannableText());
 
         mChart.setDrawHoleEnabled(true);
         mChart.setHoleColorTransparent(true);
@@ -85,8 +91,6 @@ public class PieChartActivity extends DemoBase implements OnSeekBarChangeListene
 
         // add a selection listener
         mChart.setOnChartValueSelectedListener(this);
-
-        mChart.setCenterText("MPAndroidChart\nby Philipp Jahoda");
 
         setData(3, 100);
 
@@ -217,6 +221,7 @@ public class PieChartActivity extends DemoBase implements OnSeekBarChangeListene
         colors.add(ColorTemplate.getHoloBlue());
 
         dataSet.setColors(colors);
+        //dataSet.setSelectionShift(0f);
 
         PieData data = new PieData(xVals, dataSet);
         data.setValueFormatter(new PercentFormatter());
@@ -229,6 +234,17 @@ public class PieChartActivity extends DemoBase implements OnSeekBarChangeListene
         mChart.highlightValues(null);
 
         mChart.invalidate();
+    }
+
+    private SpannableString generateCenterSpannableText() {
+
+        SpannableString s = new SpannableString("MPAndroidChart developed by Philipp Jahoda");
+        s.setSpan(new RelativeSizeSpan(1.7f), 0, 14, 0);
+//        s.setSpan(new StyleSpan(Typeface.NORMAL), 14, s.length() - 15, 0);
+//        s.setSpan(new ForegroundColorSpan(Color.GRAY), 14, s.length() - 15, 0);
+//        s.setSpan(new RelativeSizeSpan(.8f), 14, s.length() - 15, 0);
+//        s.setSpan(new StyleSpan(Typeface.ITALIC), s.length() - 14, s.length(), 0);
+        return s;
     }
 
     @Override
@@ -257,46 +273,4 @@ public class PieChartActivity extends DemoBase implements OnSeekBarChangeListene
         // TODO Auto-generated method stub
 
     }
-
-    // private void removeLastEntry() {
-    //
-    // PieData data = mChart.getDataOriginal();
-    //
-    // if (data != null) {
-    //
-    // PieDataSet set = data.getDataSet();
-    //
-    // if (set != null) {
-    //
-    // Entry e = set.getEntryForXIndex(set.getEntryCount() - 1);
-    //
-    // data.removeEntry(e, 0);
-    // // or remove by index
-    // // mData.removeEntry(xIndex, dataSetIndex);
-    //
-    // mChart.notifyDataSetChanged();
-    // mChart.invalidate();
-    // }
-    // }
-    // }
-    //
-    // private void addEntry() {
-    //
-    // PieData data = mChart.getDataOriginal();
-    //
-    // if (data != null) {
-    //
-    // PieDataSet set = data.getDataSet();
-    // // set.addEntry(...);
-    //
-    // data.addEntry(new Entry((float) (Math.random() * 25) + 20f,
-    // set.getEntryCount()), 0);
-    //
-    // // let the chart know it's data has changed
-    // mChart.notifyDataSetChanged();
-    //
-    // // redraw the chart
-    // mChart.invalidate();
-    // }
-    // }
 }

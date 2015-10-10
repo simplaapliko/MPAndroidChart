@@ -12,7 +12,7 @@ import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.Legend.LegendPosition;
 import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.data.PieData;
-import com.github.mikephil.charting.utils.PercentFormatter;
+import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.xxmassdeveloper.mpchartexample.R;
 
 public class PieChartItem extends ChartItem {
@@ -57,6 +57,7 @@ public class PieChartItem extends ChartItem {
         holder.chart.setCenterTextTypeface(mTf);
         holder.chart.setCenterTextSize(18f);
         holder.chart.setUsePercentValues(true);
+        holder.chart.setExtraOffsets(5, 10, 50, 10);
 
         mChartData.setValueFormatter(new PercentFormatter());
         mChartData.setValueTypeface(mTf);

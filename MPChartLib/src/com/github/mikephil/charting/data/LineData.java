@@ -11,7 +11,7 @@ import java.util.TreeSet;
  * 
  * @author Philipp Jahoda
  */
-public class LineData extends BarLineScatterCandleData<LineDataSet> {
+public class LineData extends BarLineScatterCandleBubbleData<LineDataSet> {
 
     public LineData() {
         super();
@@ -51,7 +51,7 @@ public class LineData extends BarLineScatterCandleData<LineDataSet> {
     // overridden methods
 
     @Override
-    protected void isLegal() {
+    protected void checkLegal() {
         if (mDataSets == null)
             return;
 

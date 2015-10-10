@@ -40,10 +40,10 @@ import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.renderer.DataRenderer;
 import com.github.mikephil.charting.renderer.LegendRenderer;
-import com.github.mikephil.charting.utils.DefaultValueFormatter;
+import com.github.mikephil.charting.formatter.DefaultValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.Utils;
-import com.github.mikephil.charting.utils.ValueFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.io.File;
@@ -299,6 +299,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     public void clear() {
         mData = null;
         mDataNotSet = true;
+        mIndicesToHighlight = null;
         invalidate();
     }
 
@@ -332,7 +333,9 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
 
     /**
      * Lets the chart know its underlying data has changed and performs all
-     * necessary recalculations.
+     * necessary recalculations. It is crucial that this method is called
+     * everytime data is changed dynamically. Not calling this method can lead
+     * to crashes or unexpected behaviour.
      */
     public abstract void notifyDataSetChanged();
 
@@ -438,16 +441,16 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
      * array of Highlight objects that reference the highlighted slices in the
      * chart
      */
-    protected Highlight[] mIndicesToHightlight = new Highlight[0];
+    protected Highlight[] mIndicesToHighlight;
 
     /**
-     * Returns the array of currently highlighted values. This might be null or
-     * empty if nothing is highlighted.
+     * Returns the array of currently highlighted values. This might a null or
+     * empty array if nothing is highlighted.
      * 
      * @return
      */
     public Highlight[] getHighlighted() {
-        return mIndicesToHightlight;
+        return mIndicesToHighlight;
     }
 
     /**
@@ -458,8 +461,8 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
      * @return
      */
     public boolean valuesToHighlight() {
-        return mIndicesToHightlight == null || mIndicesToHightlight.length <= 0
-                || mIndicesToHightlight[0] == null ? false
+        return mIndicesToHighlight == null || mIndicesToHighlight.length <= 0
+                || mIndicesToHighlight[0] == null ? false
                 : true;
     }
 
@@ -474,7 +477,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     public void highlightValues(Highlight[] highs) {
 
         // set the indices to highlight
-        mIndicesToHightlight = highs;
+        mIndicesToHighlight = highs;
 
         if(highs == null || highs.length == 0)
             mChartTouchListener.setLastHighlighted(null);
@@ -515,7 +518,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
         Entry e = null;
 
         if (high == null)
-            mIndicesToHightlight = null;
+            mIndicesToHighlight = null;
         else {
 
             if (mLogEnabled)
@@ -523,19 +526,16 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
 
             e = mData.getEntryForHighlight(high);
             if (e == null || e.getXIndex() != high.getXIndex()) {
-                mIndicesToHightlight = null;
+                mIndicesToHighlight = null;
                 high = null;
             }
             else {
                 // set the indices to highlight
-                mIndicesToHightlight = new Highlight[] {
+                mIndicesToHighlight = new Highlight[] {
                         high
                 };
             }
         }
-
-        // redraw the chart
-        invalidate();
 
         if (mSelectionListener != null) {
 
@@ -546,6 +546,8 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
                 mSelectionListener.onValueSelected(e, high.getDataSetIndex(), high);
             }
         }
+        // redraw the chart
+        invalidate();
     }
 
     /**
@@ -578,18 +580,18 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
         if (mMarkerView == null || !mDrawMarkerViews || !valuesToHighlight())
             return;
 
-        for (int i = 0; i < mIndicesToHightlight.length; i++) {
+        for (int i = 0; i < mIndicesToHighlight.length; i++) {
 
-            Highlight highlight = mIndicesToHightlight[i];
+            Highlight highlight = mIndicesToHighlight[i];
             int xIndex = highlight.getXIndex();
             int dataSetIndex = highlight.getDataSetIndex();
 
             if (xIndex <= mDeltaX && xIndex <= mDeltaX * mAnimator.getPhaseX()) {
 
-                Entry e = mData.getEntryForHighlight(mIndicesToHightlight[i]);
+                Entry e = mData.getEntryForHighlight(mIndicesToHighlight[i]);
 
                 // make sure entry not null
-                if (e == null || e.getXIndex() != mIndicesToHightlight[i].getXIndex())
+                if (e == null || e.getXIndex() != mIndicesToHighlight[i].getXIndex())
                     continue;
 
                 float[] pos = getMarkerPosition(e, highlight);
@@ -896,15 +898,6 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     }
 
     /**
-     * returns the total value (sum) of all y-values across all DataSets
-     *
-     * @return
-     */
-    public float getYValueSum() {
-        return mData.getYValueSum();
-    }
-
-    /**
      * returns the current y-max value across all DataSets
      *
      * @return
@@ -938,31 +931,7 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     }
 
     /**
-     * returns the average value of all values the chart holds
-     *
-     * @return
-     */
-    public float getAverage() {
-        return getYValueSum() / mData.getYValCount();
-    }
-
-    /**
-     * returns the average value for a specific DataSet (with a specific label)
-     * in the chart
-     *
-     * @param dataSetLabel
-     * @return
-     */
-    public float getAverage(String dataSetLabel) {
-
-        DataSet<? extends Entry> ds = mData.getDataSetByLabel(dataSetLabel, true);
-
-        return ds.getYValueSum()
-                / ds.getEntryCount();
-    }
-
-    /**
-     * returns the total number of values the chart holds (across all DataSets)
+     * Returns the total number of (y) values the chart holds (across all DataSets).
      *
      * @return
      */
@@ -1118,8 +1087,8 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     }
 
     /**
-     * Set this to true to enable logcat outputs for the chart. Default:
-     * disabled
+     * Set this to true to enable logcat outputs for the chart. Beware that
+     * logcat output decreases rendering performance. Default: disabled.
      *
      * @param enabled
      */

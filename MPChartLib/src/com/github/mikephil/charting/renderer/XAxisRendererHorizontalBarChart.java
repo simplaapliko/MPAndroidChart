@@ -108,8 +108,7 @@ public class XAxisRendererHorizontalBarChart extends XAxisRendererBarChart {
             if (mViewPortHandler.isInBoundsY(position[1])) {
 
                 String label = mXAxis.getValues().get(i);
-                c.drawText(label, pos, position[1] + mXAxis.mLabelHeight / 2f,
-                        mAxisLabelPaint);
+                drawLabel(c, label, i, pos, position[1] + mXAxis.mLabelHeight / 2f);
             }
         }
     }
@@ -192,6 +191,9 @@ public class XAxisRendererHorizontalBarChart extends XAxisRendererBarChart {
 
 			LimitLine l = limitLines.get(i);
 
+            if(!l.isEnabled())
+                continue;
+
 			mLimitLinePaint.setStyle(Paint.Style.STROKE);
 			mLimitLinePaint.setColor(l.getLineColor());
 			mLimitLinePaint.setStrokeWidth(l.getLineWidth());
@@ -220,8 +222,8 @@ public class XAxisRendererHorizontalBarChart extends XAxisRendererBarChart {
 				mLimitLinePaint.setTextSize(l.getTextSize());
 
                 final float labelLineHeight = Utils.calcTextHeight(mLimitLinePaint, label);
-                float xOffset = Utils.convertDpToPixel(4f);
-                float yOffset = l.getLineWidth() + labelLineHeight;
+                float xOffset = Utils.convertDpToPixel(4f) + l.getXOffset();
+                float yOffset = l.getLineWidth() + labelLineHeight + l.getYOffset();
 
                 final LimitLine.LimitLabelPosition position = l.getLabelPosition();
 

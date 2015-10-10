@@ -259,10 +259,9 @@ public class CandleStickChartRenderer extends LineScatterCandleRadarRenderer {
                     if (!mViewPortHandler.isInBoundsLeft(x) || !mViewPortHandler.isInBoundsY(y))
                         continue;
 
-                    float val = entries.get(j / 2 + minx).getHigh();
+                    CandleEntry entry = entries.get(j / 2 + minx);
 
-                    c.drawText(dataSet.getValueFormatter().getFormattedValue(val), x, y - yOffset,
-                            mValuePaint);
+                    drawValue(c, dataSet.getValueFormatter(), entry.getHigh(), entry, i, x, y - yOffset);
                 }
             }
         }
@@ -286,9 +285,6 @@ public class CandleStickChartRenderer extends LineScatterCandleRadarRenderer {
             if (set == null || !set.isHighlightEnabled())
                 continue;
 
-            mHighlightPaint.setColor(set.getHighLightColor());
-            mHighlightPaint.setStrokeWidth(set.getHighlightLineWidth());
-
             CandleEntry e = set.getEntryForXIndex(xIndex);
 
             if (e == null || e.getXIndex() != xIndex)
@@ -303,14 +299,13 @@ public class CandleStickChartRenderer extends LineScatterCandleRadarRenderer {
 
 
             float[] pts = new float[] {
-                    xIndex, mChart.getYChartMax(), xIndex, mChart.getYChartMin(), mChart.getXChartMin(), y,
-                    mChart.getXChartMax(), y
+                    xIndex, y
             };
 
             mChart.getTransformer(set.getAxisDependency()).pointValuesToPixel(pts);
 
             // draw the lines
-            drawHighlightLines(c, pts, set.isHorizontalHighlightIndicatorEnabled(), set.isVerticalHighlightIndicatorEnabled());
+            drawHighlightLines(c, pts, set);
         }
     }
 

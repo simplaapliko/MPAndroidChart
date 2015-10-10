@@ -10,6 +10,7 @@ import android.graphics.Path;
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.buffer.CircleBuffer;
 import com.github.mikephil.charting.buffer.LineBuffer;
+import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -24,7 +25,9 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
 
     protected LineDataProvider mChart;
 
-    /** paint for the inner circle of the value indicators */
+    /**
+     * paint for the inner circle of the value indicators
+     */
     protected Paint mCirclePaintInner;
 
     /**
@@ -47,7 +50,7 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
     protected CircleBuffer[] mCircleBuffers;
 
     public LineChartRenderer(LineDataProvider chart, ChartAnimator animator,
-            ViewPortHandler viewPortHandler) {
+                             ViewPortHandler viewPortHandler) {
         super(animator, viewPortHandler);
         mChart = chart;
 
@@ -126,7 +129,7 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
 
     /**
      * Draws a cubic line.
-     * 
+     *
      * @param c
      * @param dataSet
      * @param entries
@@ -138,8 +141,10 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
         Entry entryFrom = dataSet.getEntryForXIndex(mMinX);
         Entry entryTo = dataSet.getEntryForXIndex(mMaxX);
 
-        int minx = Math.max(dataSet.getEntryPosition(entryFrom), 0);
-        int maxx = Math.min(dataSet.getEntryPosition(entryTo) + 1, entries.size());
+        int diff = (entryFrom == entryTo) ? 1 : 0;
+        int minx = Math.max(dataSet.getEntryPosition(entryFrom) - diff, 0);
+        int maxx = Math.min(Math.max(
+                minx + 2, dataSet.getEntryPosition(entryTo) + 1), entries.size());
 
         float phaseX = mAnimator.getPhaseX();
         float phaseY = mAnimator.getPhaseY();
@@ -219,7 +224,7 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
             cubicFillPath.reset();
             cubicFillPath.addPath(cubicPath);
             // create a new path, this is bad for performance
-            drawCubicFill(dataSet, cubicFillPath, trans,
+            drawCubicFill(mBitmapCanvas, dataSet, cubicFillPath, trans,
                     entryFrom.getXIndex(), entryFrom.getXIndex() + size);
         }
 
@@ -234,32 +239,27 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
         mRenderPaint.setPathEffect(null);
     }
 
-    protected void drawCubicFill(LineDataSet dataSet, Path spline, Transformer trans,
-            int from, int to) {
+    protected void drawCubicFill(Canvas c, LineDataSet dataSet, Path spline, Transformer trans,
+                                 int from, int to) {
 
-        float fillMin = mChart.getFillFormatter()
-                .getFillLinePosition(dataSet, mChart.getLineData(), mChart.getYChartMax(),
-                        mChart.getYChartMin());
+        if (to - from <= 1)
+            return;
+
+        float fillMin = dataSet.getFillFormatter()
+                .getFillLinePosition(dataSet, mChart);
 
         spline.lineTo(to - 1, fillMin);
         spline.lineTo(from, fillMin);
         spline.close();
 
-        mRenderPaint.setStyle(Paint.Style.FILL);
-
-        mRenderPaint.setColor(dataSet.getFillColor());
-        // filled is drawn with less alpha
-        mRenderPaint.setAlpha(dataSet.getFillAlpha());
-
         trans.pathValueToPixel(spline);
-        mBitmapCanvas.drawPath(spline, mRenderPaint);
 
-        mRenderPaint.setAlpha(255);
+        drawFilledPath(c, spline, dataSet.getFillColor(), dataSet.getFillAlpha());
     }
 
     /**
      * Draws a normal line.
-     * 
+     *
      * @param c
      * @param dataSet
      * @param entries
@@ -287,8 +287,10 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
         Entry entryFrom = dataSet.getEntryForXIndex(mMinX);
         Entry entryTo = dataSet.getEntryForXIndex(mMaxX);
 
-        int minx = Math.max(dataSet.getEntryPosition(entryFrom), 0);
-        int maxx = Math.min(dataSet.getEntryPosition(entryTo) + 1, entries.size());
+        int diff = (entryFrom == entryTo) ? 1 : 0;
+        int minx = Math.max(dataSet.getEntryPosition(entryFrom) - diff, 0);
+        int maxx = Math.min(Math.max(
+                minx + 2, dataSet.getEntryPosition(entryTo) + 1), entries.size());
 
         int range = (maxx - minx) * 4 - 4;
 
@@ -312,9 +314,9 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
                 // bounds
                 if (!mViewPortHandler.isInBoundsLeft(buffer.buffer[j + 2])
                         || (!mViewPortHandler.isInBoundsTop(buffer.buffer[j + 1]) && !mViewPortHandler
-                                .isInBoundsBottom(buffer.buffer[j + 3]))
+                        .isInBoundsBottom(buffer.buffer[j + 3]))
                         || (!mViewPortHandler.isInBoundsTop(buffer.buffer[j + 1]) && !mViewPortHandler
-                                .isInBoundsBottom(buffer.buffer[j + 3])))
+                        .isInBoundsBottom(buffer.buffer[j + 3])))
                     continue;
 
                 // get the color that is set for this line-segment
@@ -342,31 +344,39 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
     }
 
     protected void drawLinearFill(Canvas c, LineDataSet dataSet, List<Entry> entries, int minx,
-            int maxx,
-            Transformer trans) {
-
-        mRenderPaint.setStyle(Paint.Style.FILL);
-
-        mRenderPaint.setColor(dataSet.getFillColor());
-        // filled is drawn with less alpha
-        mRenderPaint.setAlpha(dataSet.getFillAlpha());
+                                  int maxx,
+                                  Transformer trans) {
 
         Path filled = generateFilledPath(
                 entries,
-                mChart.getFillFormatter().getFillLinePosition(dataSet, mChart.getLineData(),
-                        mChart.getYChartMax(), mChart.getYChartMin()), minx, maxx);
+                dataSet.getFillFormatter().getFillLinePosition(dataSet, mChart), minx, maxx);
 
         trans.pathValueToPixel(filled);
 
-        c.drawPath(filled, mRenderPaint);
+        drawFilledPath(c, filled, dataSet.getFillColor(), dataSet.getFillAlpha());
+    }
 
-        // restore alpha
-        mRenderPaint.setAlpha(255);
+    /**
+     * Draws the provided path in filled mode with the provided color and alpha.
+     * Special thanks to Angelo Suzuki (https://github.com/tinsukE) for this.
+     *
+     * @param c
+     * @param filledPath
+     * @param fillColor
+     * @param fillAlpha
+     */
+    protected void drawFilledPath(Canvas c, Path filledPath, int fillColor, int fillAlpha) {
+        c.save();
+        c.clipPath(filledPath);
+
+        int color = (fillAlpha << 24) | (fillColor & 0xffffff);
+        c.drawColor(color);
+        c.restore();
     }
 
     /**
      * Generates the path that is used for filled drawing.
-     * 
+     *
      * @param entries
      * @return
      */
@@ -429,8 +439,10 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
                 Entry entryFrom = dataSet.getEntryForXIndex(mMinX);
                 Entry entryTo = dataSet.getEntryForXIndex(mMaxX);
 
-                int minx = Math.max(dataSet.getEntryPosition(entryFrom), 0);
-                int maxx = Math.min(dataSet.getEntryPosition(entryTo) + 1, entries.size());
+                int diff = (entryFrom == entryTo) ? 1 : 0;
+                int minx = Math.max(dataSet.getEntryPosition(entryFrom) - diff, 0);
+                int maxx = Math.min(Math.max(
+                        minx + 2, dataSet.getEntryPosition(entryTo) + 1), entries.size());
 
                 float[] positions = trans.generateTransformedValuesLine(
                         entries, mAnimator.getPhaseX(), mAnimator.getPhaseY(), minx, maxx);
@@ -446,11 +458,10 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
                     if (!mViewPortHandler.isInBoundsLeft(x) || !mViewPortHandler.isInBoundsY(y))
                         continue;
 
-                    float val = entries.get(j / 2 + minx).getVal();
+                    Entry entry = entries.get(j / 2 + minx);
 
-                    c.drawText(dataSet.getValueFormatter().getFormattedValue(val), x,
-                            y - valOffset,
-                            mValuePaint);
+                    drawValue(c, dataSet.getValueFormatter(), entry.getVal(), entry, i, x,
+                            y - valOffset);
                 }
             }
         }
@@ -485,8 +496,10 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
             Entry entryFrom = dataSet.getEntryForXIndex((mMinX < 0) ? 0 : mMinX);
             Entry entryTo = dataSet.getEntryForXIndex(mMaxX);
 
-            int minx = Math.max(dataSet.getEntryPosition(entryFrom), 0);
-            int maxx = Math.min(dataSet.getEntryPosition(entryTo) + 1, entries.size());
+            int diff = (entryFrom == entryTo) ? 1 : 0;
+            int minx = Math.max(dataSet.getEntryPosition(entryFrom) - diff, 0);
+            int maxx = Math.min(Math.max(
+                    minx + 2, dataSet.getEntryPosition(entryTo) + 1), entries.size());
 
             CircleBuffer buffer = mCircleBuffers[i];
             buffer.setPhases(phaseX, phaseY);
@@ -538,11 +551,8 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
             if (set == null || !set.isHighlightEnabled())
                 continue;
 
-            mHighlightPaint.setColor(set.getHighLightColor());
-            mHighlightPaint.setStrokeWidth(set.getHighlightLineWidth());
-
             int xIndex = indices[i].getXIndex(); // get the
-                                                 // x-position
+            // x-position
 
             if (xIndex > mChart.getXChartMax() * mAnimator.getPhaseX())
                 continue;
@@ -552,18 +562,27 @@ public class LineChartRenderer extends LineScatterCandleRadarRenderer {
                 continue;
 
             float y = yVal * mAnimator.getPhaseY(); // get
-                                                                            // the
+            // the
             // y-position
 
-            float[] pts = new float[] {
-                    xIndex, mChart.getYChartMax(), xIndex, mChart.getYChartMin(), mChart.getXChartMin(), y,
-                    mChart.getXChartMax(), y
+            float[] pts = new float[]{
+                    xIndex, y
             };
 
             mChart.getTransformer(set.getAxisDependency()).pointValuesToPixel(pts);
 
             // draw the lines
-            drawHighlightLines(c, pts, set.isHorizontalHighlightIndicatorEnabled(), set.isVerticalHighlightIndicatorEnabled());
+            drawHighlightLines(c, pts, set);
+        }
+    }
+
+    /**
+     * Releases the drawing bitmap. This should be called when {@link LineChart#onDetachedFromWindow()}.
+     */
+    public void releaseBitmap() {
+        if (mDrawBitmap != null) {
+            mDrawBitmap.recycle();
+            mDrawBitmap = null;
         }
     }
 }

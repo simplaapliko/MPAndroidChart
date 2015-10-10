@@ -184,8 +184,23 @@ public abstract class PieRadarChartBase<T extends ChartData<? extends DataSet<? 
                     || mLegend.getPosition() == LegendPosition.BELOW_CHART_RIGHT
                     || mLegend.getPosition() == LegendPosition.BELOW_CHART_CENTER) {
 
-                float yOffset = getRequiredBottomOffset(); // It's possible that we do not need this offset anymore as it is available through the extraOffsets
+                // It's possible that we do not need this offset anymore as it
+                //   is available through the extraOffsets, but changing it can mean
+                //   changing default visibility for existing apps.
+                float yOffset = getRequiredLegendOffset();
+
                 legendBottom = Math.min(mLegend.mNeededHeight + yOffset, mViewPortHandler.getChartHeight() * mLegend.getMaxSizePercent());
+
+            } else if (mLegend.getPosition() == LegendPosition.ABOVE_CHART_LEFT
+                    || mLegend.getPosition() == LegendPosition.ABOVE_CHART_RIGHT
+                    || mLegend.getPosition() == LegendPosition.ABOVE_CHART_CENTER) {
+
+                // It's possible that we do not need this offset anymore as it
+                //   is available through the extraOffsets, but changing it can mean
+                //   changing default visibility for existing apps.
+                float yOffset = getRequiredLegendOffset();
+
+                legendTop = Math.min(mLegend.mNeededHeight + yOffset, mViewPortHandler.getChartHeight() * mLegend.getMaxSizePercent());
 
             }
 
@@ -194,13 +209,13 @@ public abstract class PieRadarChartBase<T extends ChartData<? extends DataSet<? 
             legendTop += getRequiredBaseOffset();
         }
 
-        float min = Utils.convertDpToPixel(10f);
+        float minOffset = 0f;
 
         if (this instanceof RadarChart) {
             XAxis x = ((RadarChart) this).getXAxis();
 
             if (x.isEnabled() && x.isDrawLabelsEnabled()) {
-                min = Math.max(Utils.convertDpToPixel(10f), x.mLabelWidth);
+                minOffset = x.mLabelWidth;
             }
         }
 
@@ -209,10 +224,10 @@ public abstract class PieRadarChartBase<T extends ChartData<? extends DataSet<? 
         legendBottom += getExtraBottomOffset();
         legendLeft += getExtraLeftOffset();
 
-        float offsetLeft = Math.max(min, legendLeft);
-        float offsetTop = Math.max(min, legendTop);
-        float offsetRight = Math.max(min, legendRight);
-        float offsetBottom = Math.max(min, Math.max(getRequiredBaseOffset(), legendBottom));
+        float offsetLeft = Math.max(minOffset, legendLeft);
+        float offsetTop = Math.max(minOffset, legendTop);
+        float offsetRight = Math.max(minOffset, legendRight);
+        float offsetBottom = Math.max(minOffset, Math.max(getRequiredBaseOffset(), legendBottom));
 
         mViewPortHandler.restrainViewPort(offsetLeft, offsetTop, offsetRight, offsetBottom);
 
@@ -383,11 +398,11 @@ public abstract class PieRadarChartBase<T extends ChartData<? extends DataSet<? 
     public abstract float getRadius();
 
     /**
-     * Returns the required bottom offset for the chart.
+     * Returns the required offset for the chart legend.
      * 
      * @return
      */
-    protected abstract float getRequiredBottomOffset();
+    protected abstract float getRequiredLegendOffset();
 
     /**
      * Returns the base offset needed for the chart without calculating the
