@@ -119,7 +119,7 @@ public class BarHighlighter extends ChartHighlighter<BarDataProvider> {
 	 */
 	protected int getClosestStackIndex(Range[] ranges, float value) {
 
-		if (ranges == null)
+		if (ranges == null || ranges.length == 0)
 			return 0;
 
 		int stackIndex = 0;
@@ -131,7 +131,7 @@ public class BarHighlighter extends ChartHighlighter<BarDataProvider> {
 				stackIndex++;
 		}
 
-		int length = ranges.length - 1;
+		int length = Math.max(ranges.length - 1, 0);
 
 		return (value > ranges[length].to) ? length : 0;
 		//
@@ -188,7 +188,7 @@ public class BarHighlighter extends ChartHighlighter<BarDataProvider> {
 
 		float[] values = entry.getVals();
 
-		if (values == null)
+		if (values == null || values.length == 0)
 			return null;
 
 		float negRemain = -entry.getNegativeSum();

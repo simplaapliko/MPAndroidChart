@@ -69,12 +69,12 @@ public class PieChartRenderer extends DataRenderer {
         mTransparentCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mTransparentCirclePaint.setColor(Color.WHITE);
         mTransparentCirclePaint.setStyle(Style.FILL);
-        mTransparentCirclePaint.setAlpha(100);
+        mTransparentCirclePaint.setAlpha(105);
 
         mCenterTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         mCenterTextPaint.setColor(Color.BLACK);
         mCenterTextPaint.setTextSize(Utils.convertDpToPixel(12f));
-        mCenterTextPaint.setTextAlign(Align.CENTER);
+        //mCenterTextPaint.setTextAlign(Align.CENTER);
 
         mValuePaint.setTextSize(Utils.convertDpToPixel(13f));
         mValuePaint.setColor(Color.WHITE);
@@ -266,19 +266,19 @@ public class PieChartRenderer extends DataRenderer {
 
             PointF center = mChart.getCenterCircleBox();
 
-            if (transparentCircleRadius > holeRadius && mAnimator.getPhaseX() >= 1f
-                    && mAnimator.getPhaseY() >= 1f) {
+            // only draw the circle if it can be seen (not covered by the hole)
+            if (transparentCircleRadius > holeRadius) {
 
-                //int color = mTransparentCirclePaint.getColor();
-
-                // make transparent
-                //mTransparentCirclePaint.setColor(color & 0x60FFFFFF);
+                // get original alpha
+                int alpha = mTransparentCirclePaint.getAlpha();
+                mTransparentCirclePaint.setAlpha((int) ((float) alpha * mAnimator.getPhaseX() * mAnimator.getPhaseY()));
 
                 // draw the transparent-circle
                 mBitmapCanvas.drawCircle(center.x, center.y,
                         radius / 100 * transparentCircleRadius, mTransparentCirclePaint);
 
-                //mTransparentCirclePaint.setColor(color);
+                // reset alpha
+                mTransparentCirclePaint.setAlpha(alpha);
             }
 
             // draw the hole-circle
@@ -327,7 +327,7 @@ public class PieChartRenderer extends DataRenderer {
                 mCenterTextLayout = new StaticLayout(centerText, 0, centerText.length(),
                         mCenterTextPaint,
                         (int) Math.max(Math.ceil(width), 1.f),
-                        Layout.Alignment.ALIGN_NORMAL, 1.f, 0.f, false);
+                        Layout.Alignment.ALIGN_CENTER, 1.f, 0.f, false);
             }
 
             // I wish we could make an ellipse clipping path on Android to clip to the hole...
@@ -337,7 +337,7 @@ public class PieChartRenderer extends DataRenderer {
             float layoutHeight = mCenterTextLayout.getHeight();
 
             c.save();
-            c.translate(boundingRect.centerX(), boundingRect.top + (boundingRect.height() - layoutHeight) / 2.f);
+            c.translate(boundingRect.left, boundingRect.top + (boundingRect.height() - layoutHeight) / 2.f);
             mCenterTextLayout.draw(c);
             c.restore();
 
